@@ -93,6 +93,7 @@ where
     font: Option<Font>,
     class: Theme::Class<'a>,
     last_status: Option<Status>,
+    progress: Option<f32>,
 }
 
 impl<'a, Message, Theme> Toggler<'a, Message, Theme>
@@ -126,6 +127,7 @@ where
             font: None,
             class: Theme::default(),
             last_status: None,
+            progress: None,
         }
     }
 
@@ -206,6 +208,12 @@ where
     /// [`Font`]: crate::core::Font
     pub fn font(mut self, font: impl Into<Font>) -> Self {
         self.font = Some(font.into());
+        self
+    }
+
+    /// Sets the progress of [`Toggler`]
+    pub fn progress(mut self, progress: f32) -> Self {
+        self.progress = Some(progress);
         self
     }
 
@@ -446,16 +454,25 @@ where
 
             let padding = (style.padding_ratio * bounds.height).round();
 
-            Rectangle {
-                x: bounds.x
-                    + if self.is_toggled {
-                        bounds.width - bounds.height + padding
-                    } else {
-                        padding
-                    },
-                y: bounds.y + padding,
-                width: bounds.height - (2.0 * padding),
-                height: bounds.height - (2.0 * padding),
+            if let Some(progress) = self.progress {
+                Rectangle {
+                    x: bounds.x + (bounds.width - bounds.height) * progress + padding,
+                    y: bounds.y + padding,
+                    width: bounds.height - (2.0 * padding),
+                    height: bounds.height - (2.0 * padding),
+                }
+            } else {
+                Rectangle {
+                    x: bounds.x
+                        + if self.is_toggled {
+                            bounds.width - bounds.height + padding
+                        } else {
+                            padding
+                        },
+                    y: bounds.y + padding,
+                    width: bounds.height - (2.0 * padding),
+                    height: bounds.height - (2.0 * padding),
+                }
             }
         };
 

@@ -214,6 +214,37 @@ impl Tour {
                 0 to 100:",
             slider(0..=100, self.slider, Message::SliderChanged),
             text(self.slider.to_string()).width(Fill).align_x(Center),
+            container("hello")
+                .width(Fill)
+                .height(400)
+                .style(|_| container::Style {
+                    background: Some(
+                        iced::Gradient::Linear(iced::gradient::Linear {
+                            angle: 90_f32.to_radians().into(),
+                            stops: [
+                                Some(iced::gradient::ColorStop {
+                                    color: Color::WHITE,
+                                    offset: 0.0,
+                                }),
+                                Some(iced::gradient::ColorStop {
+                                    color: Color::from_rgb8(128, 128, 128),
+                                    offset: self.slider as f32 / 100.0,
+                                }),
+                                Some(iced::gradient::ColorStop {
+                                    color: Color::BLACK,
+                                    offset: 1.0,
+                                }),
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                            ],
+                        })
+                        .into()
+                    ),
+                    ..Default::default()
+                })
         ]
     }
 
