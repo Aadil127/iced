@@ -96,6 +96,8 @@ where
     on_input: Option<Box<dyn Fn(String) -> Message + 'a>>,
     on_paste: Option<Box<dyn Fn(String) -> Message + 'a>>,
     on_submit: Option<Message>,
+    on_focus: Option<Box<dyn Fn() -> Message + 'a>>,
+    on_unfocus: Option<Box<dyn Fn() -> Message + 'a>>,
     class: Theme::Class<'a>,
     last_status: Option<Status>,
 }
@@ -130,6 +132,8 @@ where
             on_input: None,
             on_paste: None,
             on_submit: None,
+            on_focus: None,
+            on_unfocus: None,
             class: Theme::default(),
             last_status: None,
         }
@@ -190,6 +194,18 @@ where
     /// the [`TextInput`], if `Some`.
     pub fn on_paste_maybe(mut self, on_paste: Option<impl Fn(String) -> Message + 'a>) -> Self {
         self.on_paste = on_paste.map(|f| Box::new(f) as _);
+        self
+    }
+
+    /// Sets the message that should be produced when input is focused
+    pub fn on_focus(mut self, on_focus: impl Fn() -> Message + 'a) -> Self {
+        self.on_focus = Some(Box::new(on_focus));
+        self
+    }
+
+    /// Sets the message that should be produced when input is unfocused
+    pub fn on_unfocus(mut self, on_unfocus: impl Fn() -> Message + 'a) -> Self {
+        self.on_unfocus = Some(Box::new(on_unfocus));
         self
     }
 
@@ -379,6 +395,21 @@ where
             Status::Active
         };
 
+        let is_focused = matches!(status, Status::Focused { .. });
+
+        if state.is_last_focused != is_focused {
+            if is_focused {
+                if let Some(on_focus) = self.on_focus.as_ref() {
+                    shell.publish(on_focus());
+                }
+            } else {
+                if let Some(on_unfocus) = self.on_unfocus.as_ref() {
+                    shell.publish(on_unfocus());
+                }
+            }
+        }
+        state.is_last_focused = is_focused;
+
         if let Event::Window(window::Event::RedrawRequested(_now)) = event {
             self.last_status = Some(status);
 
@@ -455,6 +486,7 @@ struct State<R: text::Renderer> {
     input: text::Input<R>,
     value: String,
     transaction: Option<shell::Tracking>,
+    is_last_focused: bool,
 }
 
 fn state<Renderer: text::Renderer + 'static>(tree: &mut Tree) -> &mut State<Renderer> {
@@ -468,6 +500,7 @@ impl<R: text::Renderer> State<R> {
             input: text::Input::new(),
             value: String::new(),
             transaction: None,
+            is_last_focused: false,
         }
     }
 }
